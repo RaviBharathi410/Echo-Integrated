@@ -53,9 +53,9 @@ fun AudiogramView(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(Slate900)
-            .border(1.dp, Slate800, RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(18.dp))
+            .background(EchoSurface)
+            .border(1.dp, EchoBorder, RoundedCornerShape(18.dp))
             .padding(16.dp)
     ) {
         // Chart Header
@@ -69,13 +69,13 @@ fun AudiogramView(
                     text = "AUDIOGRAM SCREENING PROFILE",
                     style = MaterialTheme.typography.labelSmall.copy(
                         fontWeight = FontWeight.Bold,
-                        color = Slate400,
-                        letterSpacing = 1.2.sp
+                        color = EchoNavy,
+                        letterSpacing = 1.sp
                     )
                 )
                 Text(
                     text = "Digital Attenuation (dBFS)",
-                    style = MaterialTheme.typography.bodySmall.copy(color = Slate500)
+                    style = MaterialTheme.typography.bodySmall.copy(color = EchoTextMuted)
                 )
             }
 
@@ -86,17 +86,17 @@ fun AudiogramView(
                     Box(
                         modifier = Modifier
                             .size(10.dp)
-                            .border(2.dp, Color(0xFFEF4444), RoundedCornerShape(50))
+                            .border(2.dp, Color(0xFFDC2626), RoundedCornerShape(50))
                     )
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("Right (O)", color = Color(0xFFEF4444), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Text("Right (O)", color = Color(0xFFDC2626), fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 }
 
                 // Left Ear Legend
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("✕", color = Color(0xFF38BDF8), fontSize = 12.sp, fontWeight = FontWeight.ExtraBold)
+                    Text("✕", color = EchoPrimary, fontSize = 12.sp, fontWeight = FontWeight.ExtraBold)
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("Left (X)", color = Color(0xFF38BDF8), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Text("Left (X)", color = EchoPrimary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -139,7 +139,7 @@ fun AudiogramView(
                 val normalThresholdDb = 25
                 val normalY = levelToY(normalThresholdDb)
                 drawRect(
-                    color = Color(0xFF10B981).copy(alpha = 0.08f),
+                    color = Color(0xFF10B981).copy(alpha = 0.10f),
                     topLeft = Offset(paddingLeft, paddingTop),
                     size = Size(chartWidth, normalY - paddingTop)
                 )
@@ -149,7 +149,7 @@ fun AudiogramView(
                 levelSteps.forEach { level ->
                     val y = levelToY(level)
                     drawLine(
-                        color = if (level == 25) Color(0xFF10B981).copy(alpha = 0.3f) else Slate800,
+                        color = if (level == 25) Color(0xFF10B981).copy(alpha = 0.4f) else EchoBorder,
                         start = Offset(paddingLeft, y),
                         end = Offset(paddingLeft + chartWidth, y),
                         strokeWidth = if (level == 0) 1.5.dp.toPx() else 1.dp.toPx(),
@@ -159,7 +159,7 @@ fun AudiogramView(
                     // Y-axis label text
                     drawContext.canvas.nativeCanvas.apply {
                         val paint = android.graphics.Paint().apply {
-                            color = android.graphics.Color.parseColor("#94A3B8")
+                            color = android.graphics.Color.parseColor("#5B7083")
                             textSize = 24f
                             textAlign = android.graphics.Paint.Align.RIGHT
                             isAntiAlias = true
@@ -172,7 +172,7 @@ fun AudiogramView(
                 frequencies.forEach { freq ->
                     val x = freqToX(freq)
                     drawLine(
-                        color = Slate800,
+                        color = EchoBorder,
                         start = Offset(x, paddingTop),
                         end = Offset(x, paddingTop + chartHeight),
                         strokeWidth = 1.dp.toPx()
@@ -181,7 +181,7 @@ fun AudiogramView(
                     // X-axis frequency labels
                     drawContext.canvas.nativeCanvas.apply {
                         val paint = android.graphics.Paint().apply {
-                            color = android.graphics.Color.parseColor("#94A3B8")
+                            color = android.graphics.Color.parseColor("#5B7083")
                             textSize = 24f
                             textAlign = android.graphics.Paint.Align.CENTER
                             isAntiAlias = true
@@ -211,7 +211,7 @@ fun AudiogramView(
                     // Connecting line
                     drawPath(
                         path = rightPath,
-                        color = Color(0xFFEF4444),
+                        color = Color(0xFFDC2626),
                         style = Stroke(width = 2.5.dp.toPx())
                     )
 
@@ -222,12 +222,12 @@ fun AudiogramView(
 
                         // Outer ring
                         drawCircle(
-                            color = Slate950,
+                            color = EchoSurface,
                             radius = 6.dp.toPx(),
                             center = Offset(x, y)
                         )
                         drawCircle(
-                            color = Color(0xFFEF4444),
+                            color = Color(0xFFDC2626),
                             radius = 5.dp.toPx(),
                             center = Offset(x, y),
                             style = Stroke(width = 2.dp.toPx())
@@ -255,7 +255,7 @@ fun AudiogramView(
                     // Dashed connecting line
                     drawPath(
                         path = leftPath,
-                        color = Color(0xFF38BDF8),
+                        color = EchoPrimary,
                         style = Stroke(
                             width = 2.5.dp.toPx(),
                             pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 6f))
@@ -270,20 +270,20 @@ fun AudiogramView(
 
                         // Background mask
                         drawCircle(
-                            color = Slate950,
+                            color = EchoSurface,
                             radius = 7.dp.toPx(),
                             center = Offset(x, y)
                         )
 
                         // Draw X arms
                         drawLine(
-                            color = Color(0xFF38BDF8),
+                            color = EchoPrimary,
                             start = Offset(x - halfSize, y - halfSize),
                             end = Offset(x + halfSize, y + halfSize),
                             strokeWidth = 2.5.dp.toPx()
                         )
                         drawLine(
-                            color = Color(0xFF38BDF8),
+                            color = EchoPrimary,
                             start = Offset(x - halfSize, y + halfSize),
                             end = Offset(x + halfSize, y - halfSize),
                             strokeWidth = 2.5.dp.toPx()
@@ -308,7 +308,7 @@ fun AudiogramView(
             Spacer(modifier = Modifier.width(6.dp))
             Text(
                 "Shaded: ≤ 25 dBFS provisional screening zone",
-                color = Slate400,
+                color = EchoTextMuted,
                 fontSize = 11.sp
             )
         }

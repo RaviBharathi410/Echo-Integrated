@@ -1,5 +1,0 @@
-# ninja log v5
-1	13902	8157527368237115	CMakeFiles/echoaudio.dir/native_audio_engine.cpp.o	aaa8da04255793e7
-13916	14108	8157527370535854	E:/ECHO/ECHO_Integrated/app/build/intermediates/cxx/Debug/63v3w241/obj/arm64-v8a/libechoaudio.so	dc6aa8cffbe9afce
-11	1250	8157530395169219	CMakeFiles/echoaudio.dir/native_audio_engine.cpp.o	aaa8da04255793e7
-1250	1422	8157530397029771	E:/ECHO/ECHO_Integrated/app/build/intermediates/cxx/Debug/63v3w241/obj/arm64-v8a/libechoaudio.so	dc6aa8cffbe9afce

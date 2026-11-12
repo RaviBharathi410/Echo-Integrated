@@ -1,18 +1,15 @@
 <!doctype html>
 <html lang="en">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ECHO Hearing Screening POC</title><link rel="stylesheet" href="styles.css"></head>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>ECHO — Hearing Screening &amp; Live Monitor</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
 <body>
-<header><div class="eyebrow">ECHO · PROOF OF CONCEPT</div><h1>Hearing-screening test engine</h1><p>Interactive simulation of module flow, threshold-search state, and automatic disturbance pause/recovery.</p><div class="notice"><strong>Simulation only.</strong> This demo does not output calibrated tones, measure real room noise, or produce clinically valid hearing thresholds.</div></header>
-<main>
-<section class="grid">
-<article class="panel"><h2>1 · Pre-test gates</h2><p>Simulate device support, calibration availability and noise-sensor availability.</p>
-<label><input id="deviceSupported" type="checkbox" checked> Supported device profile</label><label><input id="calibrationAvailable" type="checkbox" checked> Valid calibration profile available</label><label><input id="sensorAvailable" type="checkbox" checked> Trusted noise sensor available</label>
-<button id="precheck">Run precheck</button><button id="restart" class="secondary">Restart session</button></article>
-<article class="panel"><h2>2 · Test state</h2><div class="stat"><span>Current state</span><strong id="state">PRECHECK</strong></div><div class="stat"><span>Current target</span><strong id="target">—</strong></div><div class="stat"><span>Results</span><strong id="counts">0/8 targets recorded</strong></div><div class="stat"><span>Noise pauses</span><strong id="pauseCount">0</strong></div>
-<button id="begin">Begin simulated tone</button><div class="actions"><button id="heard" class="good">Heard</button><button id="notHeard" class="secondary">Not heard</button><button id="accept">Evaluate / next target</button></div></article>
-<article class="panel disturbance"><h2>3 · Disturbance injection</h2><p>Inject a disturbance while a simulated tone is active. An invalid trial must not be interpreted as “not heard.”</p><button id="injectNoise" class="danger">Simulate external noise</button><button id="quiet" class="secondary">Simulate quiet environment</button><label><input id="stable" type="checkbox" checked> Environment remained stable through recovery window</label><button id="resume">Recheck and resume</button></article>
-<article class="panel"><h2>4 · Session output</h2><p>Structured summary, quality flags and simulated results.</p><pre id="result">{}</pre></article>
-<article class="panel full"><h2>5 · Event log</h2><ul id="log"></ul></article>
-</section>
-<section class="panel"><h2>Production adapters still required</h2><div class="chips"><span>Native audio output</span><span>Platform-specific microphone capture</span><span>Validated calibration profiles</span><span>Acoustic noise estimator</span><span>Clinical reference comparison</span><span>Privacy / consent review</span></div><p class="small">The demo validates domain-state behaviour only. Hardware output, microphone response, calibration, background behaviour and clinical performance require real-device engineering and independent validation.</p></section>
-</main><script type="module" src="src/app.js"></script></body></html>
+  <div class="viewport-bg">
+    <div id="app" class="phone-shell"></div>
+  </div>
+  <script type="module" src="src/app.js"></script>
+</body>
+</html>

@@ -18,9 +18,11 @@ build/
 app/build/
 */build/
 
-# Gradle files
+# Gradle / Native CMake files
 .gradle/
 .kotlin/
+.cxx/
+app/.cxx/
 
 # Local configuration file (sdk path, etc)
 local.properties

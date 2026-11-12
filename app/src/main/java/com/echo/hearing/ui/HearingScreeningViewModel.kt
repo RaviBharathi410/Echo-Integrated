@@ -61,7 +61,13 @@ data class HearingScreeningUiState(
     val practiceLatencyMs: Long? = null,
     val practiceFeedbackMessage: String? = null,
     // Final outcome
-    val screeningOutcome: SessionScreeningOutcome? = null
+    val screeningOutcome: SessionScreeningOutcome? = null,
+    // Ear transition interstitial ("Left Ear Screening Complete")
+    val earTransitionPending: Boolean = false,
+    // Frequency set toggle (4 default vs 6 full screening frequencies)
+    val useSixFrequencies: Boolean = false,
+    // Persisted screening history from LocalJsonSessionRepository
+    val savedSessions: List<HearingSessionRecord> = emptyList()
 )
 
 /**
@@ -82,6 +88,8 @@ class HearingScreeningViewModel(
     private val qualityController = TrialQualityController()
 
     private var currentStrategyType: StrategyType = initialStrategyType
+    private var activeFrequencies: List<Int> = protocolConfig.frequencies
+    private var pauseOnEarTransition: Boolean = false
     private var thresholdStrategy: ThresholdEstimationStrategy = createStrategy(initialStrategyType)
 
     private val _uiState = MutableStateFlow(
@@ -154,14 +162,77 @@ class HearingScreeningViewModel(
             }
         }
 
-        // Initial audio route check
+        // Initial audio route check & persisted sessions
         refreshDeviceRoute()
+        refreshSavedSessions()
     }
 
     private fun createStrategy(type: StrategyType): ThresholdEstimationStrategy {
         return when (type) {
-            StrategyType.MODIFIED_HUGHSON_WESTLAKE -> ModifiedHughsonWestlakeEngine(protocolConfig)
-            StrategyType.BINARY_SEARCH_REFINEMENT -> BinarySearchStrategy(binarySearchConfig)
+            StrategyType.MODIFIED_HUGHSON_WESTLAKE -> ModifiedHughsonWestlakeEngine(
+                protocolConfig.copy(frequencies = activeFrequencies)
+            )
+            StrategyType.BINARY_SEARCH_REFINEMENT -> BinarySearchStrategy(
+                binarySearchConfig.copy(frequencies = activeFrequencies)
+            )
+        }
+    }
+
+    fun setPauseOnEarTransition(enabled: Boolean) {
+        pauseOnEarTransition = enabled
+    }
+
+    fun setUseSixFrequencies(enabled: Boolean) {
+        if (_uiState.value.sessionState == SessionState.NOT_STARTED ||
+            _uiState.value.sessionState == SessionState.TEST_PREP ||
+            _uiState.value.sessionState == SessionState.ONBOARDING_CONSENT ||
+            _uiState.value.sessionState == SessionState.DEVICE_READINESS ||
+            _uiState.value.sessionState == SessionState.ENVIRONMENTAL_NOISE_CHECK
+        ) {
+            activeFrequencies = if (enabled) {
+                listOf(
+                    AudiometricFrequencies.FREQ_250_HZ,
+                    AudiometricFrequencies.FREQ_500_HZ,
+                    AudiometricFrequencies.FREQ_1000_HZ,
+                    AudiometricFrequencies.FREQ_2000_HZ,
+                    AudiometricFrequencies.FREQ_4000_HZ,
+                    AudiometricFrequencies.FREQ_8000_HZ
+                )
+            } else {
+                protocolConfig.frequencies
+            }
+            thresholdStrategy = createStrategy(currentStrategyType)
+            _uiState.update {
+                it.copy(
+                    useSixFrequencies = enabled,
+                    currentEar = thresholdStrategy.currentEar,
+                    currentFrequencyHz = thresholdStrategy.currentFrequencyHz,
+                    currentLevelDb = thresholdStrategy.currentLevelDb,
+                    totalTargets = protocolConfig.ears.size * activeFrequencies.size
+                )
+            }
+        }
+    }
+
+    fun refreshSavedSessions() {
+        val list = runCatching { sessionRepository.listSessions() }.getOrDefault(emptyList())
+        _uiState.update { it.copy(savedSessions = list) }
+    }
+
+    fun deleteSession(sessionId: String) {
+        runCatching { sessionRepository.deleteSession(sessionId) }
+        refreshSavedSessions()
+    }
+
+    fun continueToRightEar() {
+        if (!_uiState.value.earTransitionPending) return
+        _uiState.update { it.copy(earTransitionPending = false) }
+        viewModelScope.launch {
+            try {
+                stateMachine.transition(SessionEvent.NextTrialNeeded)
+                _uiState.update { it.copy(sessionState = stateMachine.currentState) }
+                startStimulusPresentation()
+            } catch (ignored: Exception) {}
         }
     }
 
@@ -589,6 +660,7 @@ class HearingScreeningViewModel(
             }
 
             is StrategyResult.ThresholdFound -> {
+                val previousEar = _uiState.value.currentEar
                 _uiState.update {
                     it.copy(
                         thresholdResults = thresholdStrategy.thresholdResults,
@@ -597,69 +669,32 @@ class HearingScreeningViewModel(
                     )
                 }
                 if (result.nextTarget != null) {
-                    _uiState.update {
-                        it.copy(
-                            currentEar = result.nextTarget.ear,
-                            currentFrequencyHz = result.nextTarget.frequencyHz,
-                            currentLevelDb = thresholdStrategy.currentLevelDb
-                        )
-                    }
-                    viewModelScope.launch {
-                        delay(600L)
-                        try {
-                            stateMachine.transition(SessionEvent.NextTrialNeeded)
-                            _uiState.update { it.copy(sessionState = stateMachine.currentState) }
-                            startStimulusPresentation()
-                        } catch (e: Exception) {}
-                    }
+                    scheduleNextTarget(previousEar, result.nextTarget)
                 } else {
                     finishScreening()
                 }
             }
 
             is StrategyResult.MaxTrialsExceeded -> {
+                val previousEar = _uiState.value.currentEar
                 if (result.nextTarget != null) {
-                    _uiState.update {
-                        it.copy(
-                            currentEar = result.nextTarget.ear,
-                            currentFrequencyHz = result.nextTarget.frequencyHz,
-                            currentLevelDb = thresholdStrategy.currentLevelDb,
-                            trials = thresholdStrategy.allTrials
-                        )
-                    }
-                    viewModelScope.launch {
-                        delay(600L)
-                        try {
-                            stateMachine.transition(SessionEvent.NextTrialNeeded)
-                            _uiState.update { it.copy(sessionState = stateMachine.currentState) }
-                            startStimulusPresentation()
-                        } catch (e: Exception) {}
-                    }
+                    _uiState.update { it.copy(trials = thresholdStrategy.allTrials) }
+                    scheduleNextTarget(previousEar, result.nextTarget)
                 } else {
                     finishScreening()
                 }
             }
 
             is StrategyResult.Inconclusive -> {
-                // Inconclusive target bracket
+                val previousEar = _uiState.value.currentEar
                 if (result.nextTarget != null) {
                     _uiState.update {
                         it.copy(
-                            currentEar = result.nextTarget.ear,
-                            currentFrequencyHz = result.nextTarget.frequencyHz,
-                            currentLevelDb = thresholdStrategy.currentLevelDb,
                             trials = thresholdStrategy.allTrials,
                             qualityFlags = it.qualityFlags + QualityFlag.INCOMPLETE_TARGETS
                         )
                     }
-                    viewModelScope.launch {
-                        delay(600L)
-                        try {
-                            stateMachine.transition(SessionEvent.NextTrialNeeded)
-                            _uiState.update { it.copy(sessionState = stateMachine.currentState) }
-                            startStimulusPresentation()
-                        } catch (e: Exception) {}
-                    }
+                    scheduleNextTarget(previousEar, result.nextTarget)
                 } else {
                     finishScreening()
                 }
@@ -668,6 +703,27 @@ class HearingScreeningViewModel(
             is StrategyResult.AllTargetsCompleted -> {
                 finishScreening()
             }
+        }
+    }
+
+    private fun scheduleNextTarget(previousEar: Ear, nextTarget: TargetPair) {
+        val switchingToRightEar = pauseOnEarTransition && previousEar == Ear.LEFT && nextTarget.ear == Ear.RIGHT
+        _uiState.update {
+            it.copy(
+                currentEar = nextTarget.ear,
+                currentFrequencyHz = nextTarget.frequencyHz,
+                currentLevelDb = thresholdStrategy.currentLevelDb,
+                earTransitionPending = switchingToRightEar
+            )
+        }
+        if (switchingToRightEar) return
+        viewModelScope.launch {
+            delay(600L)
+            try {
+                stateMachine.transition(SessionEvent.NextTrialNeeded)
+                _uiState.update { it.copy(sessionState = stateMachine.currentState) }
+                startStimulusPresentation()
+            } catch (e: Exception) {}
         }
     }
 
@@ -815,7 +871,9 @@ class HearingScreeningViewModel(
                     currentEar = thresholdStrategy.currentEar,
                     currentFrequencyHz = thresholdStrategy.currentFrequencyHz,
                     currentLevelDb = thresholdStrategy.currentLevelDb,
-                    totalTargets = protocolConfig.ears.size * protocolConfig.frequencies.size,
+                    totalTargets = protocolConfig.ears.size * activeFrequencies.size,
+                    useSixFrequencies = it.useSixFrequencies,
+                    savedSessions = it.savedSessions,
                     audioRoute = it.audioRoute,
                     isHeadphoneConnected = it.isHeadphoneConnected,
                     calibrationInfo = it.calibrationInfo,
@@ -850,7 +908,9 @@ class HearingScreeningViewModel(
                 currentEar = thresholdStrategy.currentEar,
                 currentFrequencyHz = thresholdStrategy.currentFrequencyHz,
                 currentLevelDb = thresholdStrategy.currentLevelDb,
-                totalTargets = protocolConfig.ears.size * protocolConfig.frequencies.size,
+                totalTargets = protocolConfig.ears.size * activeFrequencies.size,
+                useSixFrequencies = it.useSixFrequencies,
+                savedSessions = it.savedSessions,
                 isSimulationMode = it.isSimulationMode
             )
         }
@@ -889,7 +949,7 @@ class HearingScreeningViewModel(
     fun computeScreeningOutcome(): SessionScreeningOutcome {
         val leftThresholds = thresholdStrategy.thresholdResults.filter { it.ear == Ear.LEFT }
         val rightThresholds = thresholdStrategy.thresholdResults.filter { it.ear == Ear.RIGHT }
-        val targetFreqCount = protocolConfig.frequencies.size
+        val targetFreqCount = activeFrequencies.size
 
         val leftSummary = evaluateEarScreening(Ear.LEFT, leftThresholds, targetFreqCount)
         val rightSummary = evaluateEarScreening(Ear.RIGHT, rightThresholds, targetFreqCount)
@@ -980,6 +1040,7 @@ class HearingScreeningViewModel(
         )
 
         sessionRepository.saveSession(record)
+        refreshSavedSessions()
     }
 
     // --- Developer Simulation Panel Controls ---

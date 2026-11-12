@@ -1,7 +1,0 @@
-[
-{
-  "directory": "E:/ECHO/ECHO_Integrated/app/.cxx/Debug/63v3w241/armeabi-v7a",
-  "command": "C:\\Users\\kkmna\\AppData\\Local\\Android\\Sdk\\ndk\\28.2.13676358\\toolchains\\llvm\\prebuilt\\windows-x86_64\\bin\\clang++.exe --target=armv7-none-linux-androideabi29 --sysroot=C:/Users/kkmna/AppData/Local/Android/Sdk/ndk/28.2.13676358/toolchains/llvm/prebuilt/windows-x86_64/sysroot -Dechoaudio_EXPORTS -isystem C:/Users/kkmna/.gradle/caches/8.11.1/transforms/4ee777f4276a3d23418497fb7132cee5/transformed/oboe-1.9.3/prefab/modules/oboe/include -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -march=armv7-a -mthumb -Wformat -Werror=format-security  -std=c++17 -fno-limit-debug-info  -fPIC -Wall -Wextra -o CMakeFiles\\echoaudio.dir\\native_audio_engine.cpp.o -c E:\\ECHO\\ECHO_Integrated\\app\\src\\main\\cpp\\native_audio_engine.cpp",
-  "file": "E:\\ECHO\\ECHO_Integrated\\app\\src\\main\\cpp\\native_audio_engine.cpp"
-}
-]
