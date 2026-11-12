@@ -45,15 +45,16 @@ class AudiogramView extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 10),
-        const Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+        const Wrap(
+          alignment: WrapAlignment.center,
+          spacing: 16,
+          runSpacing: 6,
           children: [
             _LegendDot(
               symbol: 'O',
               color: Color(0xFFDC2626),
               label: 'Right Ear (AD)',
             ),
-            SizedBox(width: 20),
             _LegendDot(
               symbol: 'X',
               color: EchoColors.primary,

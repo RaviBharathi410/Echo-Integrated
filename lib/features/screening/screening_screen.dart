@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:echo_hearing/app/feature_flags.dart';
 import 'package:echo_hearing/app/router.dart';
 import 'package:echo_hearing/app/theme/echo_colors.dart';
@@ -6,6 +8,7 @@ import 'package:echo_hearing/core/data/user_profile_store.dart';
 import 'package:echo_hearing/core/domain/models/hearing_models.dart';
 import 'package:echo_hearing/core/domain/statemachine/session_state_machine.dart';
 import 'package:echo_hearing/core/domain/threshold/threshold_estimation_strategy.dart';
+import 'package:echo_hearing/features/monitor/monitor_notifier.dart';
 import 'package:echo_hearing/features/screening/screening_notifier.dart';
 import 'package:echo_hearing/features/screening/widgets/audiogram_view.dart';
 import 'package:flutter/material.dart';
@@ -62,6 +65,14 @@ class _ScreeningShellScreenState extends ConsumerState<ScreeningShellScreen> {
       if (prev?.sessionState != SessionState.results &&
           next.sessionState == SessionState.results) {
         ref.read(userProfileProvider.notifier).markInitialScreeningCompleted();
+      }
+      if (prev?.savedSessions != next.savedSessions &&
+          next.savedSessions.isNotEmpty) {
+        unawaited(
+          ref
+              .read(monitorNotifierProvider.notifier)
+              .importLatestScreening(silentWhenEmpty: true),
+        );
       }
     });
 
