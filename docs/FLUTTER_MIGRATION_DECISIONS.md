@@ -63,3 +63,9 @@ All architectural, behavioral, and platform decisions made during the migration 
 - **Decision:** Use `go_router` (`StatefulShellRoute.indexedStack` for the 5 bottom tabs + onboarding/initial-screening guards), exact color/typography/radii tokens from `web-prototype/styles.css` and `Theme.kt`, and `CustomPainter` for the ASHA `AudiogramView`. Keep the mandatory `"preliminary screening / wellness tool, not diagnostic"` disclaimer on all result/detail screens.
 - **Alternatives Considered:** `Navigator 1.0` tab switching; third-party chart packages.
 - **Reason:** Matches `web-prototype` flow fidelity, guarantees deterministic Audiogram ASHA visual rendering (`log2` X-axis, inverted Y-axis, `<=25 dBFS` green zone), and maintains medical-disclaimer compliance.
+
+## 13. Android Flutter Gradle Adjustments (`compileSdk = 36`, `kotlin.incremental = false`)
+- **Decision:** Set `compileSdk = 36` in `android/app/build.gradle.kts` (preserving `targetSdk = 35`, `minSdk = 29`, NDK `28.2.13676358`, CMake `3.22.1`, and unchanged C++/CMake files) and set `kotlin.incremental = false` in `android/gradle.properties`.
+- **Alternatives Considered:** Downgrading Flutter plugins (`shared_preferences_android`) to older API-35 builds.
+- **Reason:** `shared_preferences_android 2.5.5` requires `compileSdk >= 36` during AAR metadata checks, and Kotlin incremental compilation on Windows fails when the Pub cache resides on `C:` while the workspace resides on `D:`.
+

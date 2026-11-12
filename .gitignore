@@ -50,3 +50,21 @@ yarn-error.log*
 # OS metadata
 .DS_Store
 Thumbs.db
+
+# Flutter / Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
+**/android/**/GeneratedPluginRegistrant.java
+**/android/**/GeneratedPluginRegistrant.kt
+android/app/debug/
+android/app/profile/
+android/app/release/
+*.iml
+.idea/
+echo_hearing*.iml
+
