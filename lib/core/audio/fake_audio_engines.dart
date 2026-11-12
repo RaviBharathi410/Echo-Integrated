@@ -88,6 +88,9 @@ class FakeNoiseMonitor implements NoiseMonitor {
   @override
   Future<bool> startMonitoring() async {
     monitoringActive = sensorAvailable;
+    if (!sensorAvailable) {
+      injectAssessment(NoiseAssessment.unavailable, -100.0, quietSeconds: 0);
+    }
     return monitoringActive;
   }
 
@@ -99,21 +102,31 @@ class FakeNoiseMonitor implements NoiseMonitor {
   @override
   Future<bool> isSensorAvailable() async => sensorAvailable;
 
+  void injectAssessment(
+    NoiseAssessment assessment,
+    double dbFs, {
+    int quietSeconds = 0,
+  }) {
+    _latest = NoiseReading(
+      levelDbFs: dbFs,
+      assessment: assessment,
+      isDisturbance:
+          assessment == NoiseAssessment.invalid ||
+          assessment == NoiseAssessment.unavailable,
+      consecutiveQuietSeconds: assessment == NoiseAssessment.valid
+          ? quietSeconds
+          : 0,
+    );
+    _ctrl.add(_latest);
+  }
+
   void emitSimulatedNoise(double dbFs, {int quietSeconds = 0}) {
     final assessment = dbFs > -25.0
         ? NoiseAssessment.invalid
         : dbFs > -35.0
         ? NoiseAssessment.suspect
         : NoiseAssessment.valid;
-    _latest = NoiseReading(
-      levelDbFs: dbFs,
-      assessment: assessment,
-      isDisturbance: assessment == NoiseAssessment.invalid,
-      consecutiveQuietSeconds: assessment == NoiseAssessment.invalid
-          ? 0
-          : quietSeconds,
-    );
-    _ctrl.add(_latest);
+    injectAssessment(assessment, dbFs, quietSeconds: quietSeconds);
   }
 
   void emitSimulatedDisturbance() {
