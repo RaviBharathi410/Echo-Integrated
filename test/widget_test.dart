@@ -2,15 +2,27 @@ import 'package:echo_hearing/app/app.dart';
 import 'package:echo_hearing/core/audio/audio_providers.dart';
 import 'package:echo_hearing/core/audio/fake_audio_engines.dart';
 import 'package:echo_hearing/core/data/user_profile_store.dart';
+import 'package:echo_hearing/core/permissions/permission_gateway.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+Future<void> _tapVisible(WidgetTester tester, Finder finder) async {
+  await tester.ensureVisible(finder);
+  await tester.pumpAndSettle();
+  await tester.tap(finder);
+  await tester.pumpAndSettle();
+}
+
 void main() {
   testWidgets(
-    'EchoApp boots into onboarding, completes guest flow into 5-tab shell, and releases audio on background',
+    'EchoApp boots into onboarding, completes consent + permissions into 5-tab shell, and releases audio on background',
     (tester) async {
+      tester.view.physicalSize = const Size(412, 915);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
       SharedPreferences.setMockInitialValues({});
       final prefs = await SharedPreferences.getInstance();
 
@@ -32,6 +44,7 @@ void main() {
           noiseMonitorProvider.overrideWithValue(noise),
           liveMonitorEngineProvider.overrideWithValue(monitor),
           screeningDeviceDetectorProvider.overrideWithValue(detector),
+          permissionGatewayProvider.overrideWithValue(FakePermissionGateway()),
         ],
       );
       addTearDown(() {
@@ -52,8 +65,14 @@ void main() {
 
       expect(find.text('Welcome to ECHO'), findsOneWidget);
 
-      await tester.tap(find.text('Continue as Guest'));
-      await tester.pumpAndSettle();
+      await _tapVisible(tester, find.text('Get Started'));
+      await _tapVisible(tester, find.text('Continue as Guest'));
+      await _tapVisible(tester, find.text('Continue'));
+
+      await _tapVisible(tester, find.byType(Checkbox));
+      await _tapVisible(tester, find.text('Accept & Continue'));
+
+      await _tapVisible(tester, find.text('Continue to Device Setup'));
 
       // Should land inside 5-tab main scaffold (initialScreeningCompleted=false -> Test tab).
       expect(find.text('Hearing Screening'), findsOneWidget);
@@ -64,7 +83,6 @@ void main() {
       expect(find.text('Reports'), findsOneWidget);
       expect(find.text('Profile'), findsOneWidget);
 
-      // Verify lifecycle backgrounding calls AudioSessionCoordinator.releaseAll().
       final before = coordinator.releaseCalls;
       tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
       await tester.pump();

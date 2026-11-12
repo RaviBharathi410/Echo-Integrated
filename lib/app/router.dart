@@ -34,7 +34,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       final inOnboarding = location.startsWith('/onboarding');
 
       if (!profile.onboardingCompleted) {
-        return inOnboarding ? null : '/onboarding/welcome';
+        if (!inOnboarding) return '/onboarding/welcome';
+        // Enforce consent gate before advancing to permissions.
+        if (location == '/onboarding/permissions' &&
+            !profile.healthNoticeAccepted) {
+          return '/onboarding/health-notice';
+        }
+        return null;
       }
       if (inOnboarding) {
         return profile.initialScreeningCompleted ? '/home' : '/test';
@@ -44,11 +50,25 @@ final routerProvider = Provider<GoRouter>((ref) {
     routes: [
       GoRoute(
         path: '/onboarding/welcome',
-        builder: (context, state) => const OnboardingWelcomePlaceholder(),
+        builder: (context, state) => const WelcomeScreen(),
       ),
       GoRoute(
         path: '/onboarding/account',
-        builder: (context, state) => const OnboardingAccountPlaceholder(),
+        builder: (context, state) => AccountScreen(
+          initialRegisterMode: state.uri.queryParameters['mode'] == 'register',
+        ),
+      ),
+      GoRoute(
+        path: '/onboarding/profile',
+        builder: (context, state) => const ProfileSetupScreen(),
+      ),
+      GoRoute(
+        path: '/onboarding/health-notice',
+        builder: (context, state) => const HealthNoticeScreen(),
+      ),
+      GoRoute(
+        path: '/onboarding/permissions',
+        builder: (context, state) => const PermissionsScreen(),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
@@ -139,7 +159,6 @@ class EchoMainScaffold extends ConsumerWidget {
                 labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
                 onDestinationSelected: (index) {
                   if (currentIndex == 2 && index != 2) {
-                    // Enforce stopping the live Oboe stream when leaving Monitor tab.
                     unawaited(
                       ref.read(liveMonitorEngineProvider).stop(
                         reason: 'tabSwitch',
