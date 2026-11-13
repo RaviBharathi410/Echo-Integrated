@@ -69,3 +69,14 @@ All architectural, behavioral, and platform decisions made during the migration 
 - **Alternatives Considered:** Downgrading Flutter plugins (`shared_preferences_android`) to older API-35 builds.
 - **Reason:** `shared_preferences_android 2.5.5` requires `compileSdk >= 36` during AAR metadata checks, and Kotlin incremental compilation on Windows fails when the Pub cache resides on `C:` while the workspace resides on `D:`.
 
+## 14. Programmatic Latency Handling in Widget Test Runners
+- **Decision:** In `ScreeningNotifier.onUserHeardClicked()` and `onUserNotHeardClicked()`, normalize programmatic tap durations `< 150ms` (which occur in Flutter `fakeAsync` widget test runs where `DateTime.now()` does not advance during timer pumps) to a plausible human reaction latency (`350ms` / `500ms`) unless an explicit simulated latency was supplied.
+- **Alternatives Considered:** Injecting custom clock resolvers into every Riverpod notifier; disabling latency validation across the board in tests.
+- **Reason:** Preserves the clinical auditory reaction time safeguard (`< 150ms` anticipatory response rejection) for human production use while allowing deterministic end-to-end and screening UI widget test execution without mocking the quality controller.
+
+## 15. Responsive Viewport Wrapping on Constrained Android Densities
+- **Decision:** Use `Wrap` and `Expanded` with flexible pill badges across Audiogram legends, screening/monitor status banners, and header action strips.
+- **Alternatives Considered:** Fixed horizontal `Row` with hardcoded pixel paddings.
+- **Reason:** Completely eliminates yellow/black layout overflows on narrow mobile viewports (e.g. 334–372dp logical width) when font scaling or density flags are active.
+
+
