@@ -224,3 +224,4 @@ class UserProfileNotifier extends Notifier<UserProfile> {
 
 final userProfileProvider =
     NotifierProvider<UserProfileNotifier, UserProfile>(UserProfileNotifier.new);
+

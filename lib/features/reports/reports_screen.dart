@@ -47,16 +47,20 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
-                            'Weekly Summary',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
-                              color: EchoColors.navy,
+                          const Expanded(
+                            child: Text(
+                              'Weekly Summary',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
+                                color: EchoColors.navy,
+                              ),
                             ),
                           ),
-                          if (demoEnabled)
+                          if (demoEnabled) ...[
+                            const SizedBox(width: 8),
                             const EchoStatusPill(label: 'Sample data'),
+                          ],
                         ],
                       ),
                       const SizedBox(height: 10),

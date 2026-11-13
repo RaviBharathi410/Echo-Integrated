@@ -126,3 +126,4 @@ void main() {
     expect(sm.currentState, SessionState.stimulusPresentation);
   });
 }
+

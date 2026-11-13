@@ -391,3 +391,4 @@ class BinarySearchStrategy implements ThresholdEstimationStrategy {
 
   TargetBracketState getActiveBracket() => _activeBracket;
 }
+

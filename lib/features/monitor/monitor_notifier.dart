@@ -591,3 +591,4 @@ class MonitorNotifier extends Notifier<MonitorUiState> {
 
 final monitorNotifierProvider =
     NotifierProvider<MonitorNotifier, MonitorUiState>(MonitorNotifier.new);
+

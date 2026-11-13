@@ -154,14 +154,17 @@ class HomeScreen extends ConsumerWidget {
                       const Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            'Screening Snapshot',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                              color: EchoColors.navy,
+                          Expanded(
+                            child: Text(
+                              'Screening Snapshot',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                color: EchoColors.navy,
+                              ),
                             ),
                           ),
+                          SizedBox(width: 8),
                           EchoStatusPill(label: 'Sample data'),
                         ],
                       ),

@@ -40,3 +40,4 @@ void main() {
     expect(monitor.latestReading.isDisturbance, isTrue);
   });
 }
+

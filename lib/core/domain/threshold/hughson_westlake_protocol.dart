@@ -272,3 +272,4 @@ class ModifiedHughsonWestlakeEngine implements ThresholdEstimationStrategy {
     _thresholdResults.clear();
   }
 }
+

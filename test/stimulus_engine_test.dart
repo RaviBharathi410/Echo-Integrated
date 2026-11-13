@@ -50,3 +50,4 @@ void main() {
     expect(events.last.state, ToneEventState.finished);
   });
 }
+

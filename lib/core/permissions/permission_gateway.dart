@@ -99,3 +99,4 @@ class FakePermissionGateway implements PermissionGateway {
 final permissionGatewayProvider = Provider<PermissionGateway>((ref) {
   return const PermissionHandlerGateway();
 });
+

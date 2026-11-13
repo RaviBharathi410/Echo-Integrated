@@ -28,3 +28,4 @@ abstract final class EchoColors {
   static const Color rose = Color(0xFFDC2626);
   static const Color roseSoft = Color(0xFFFEE2E2);
 }
+

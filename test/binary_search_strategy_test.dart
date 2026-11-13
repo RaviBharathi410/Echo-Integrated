@@ -253,3 +253,4 @@ void main() {
     expect(threshold.method, 'BINARY_SEARCH_REFINEMENT');
   });
 }
+

@@ -23,3 +23,4 @@ class DemoDataNotifier extends Notifier<bool> {
 final demoDataEnabledProvider = NotifierProvider<DemoDataNotifier, bool>(
   DemoDataNotifier.new,
 );
+

@@ -428,3 +428,4 @@ class AndroidAudioBridge
     unawaited(_monitorCtrl.close());
   }
 }
+

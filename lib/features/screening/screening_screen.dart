@@ -812,22 +812,29 @@ class _ActiveScreeningView extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
           child: Column(
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  EchoStatusPill(
-                    label: '${state.currentEar.displayName} (${state.currentEar.clinicalCode})',
-                    icon: Icons.headphones_outlined,
-                  ),
-                  Text(
-                    '${state.currentFrequencyHz} Hz • ${state.currentLevelDb} dBFS',
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: EchoColors.navy,
+              SizedBox(
+                width: double.infinity,
+                child: Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 8,
+                  runSpacing: 6,
+                  children: [
+                    EchoStatusPill(
+                      label:
+                          '${state.currentEar.displayName} (${state.currentEar.clinicalCode})',
+                      icon: Icons.headphones_outlined,
                     ),
-                  ),
-                ],
+                    Text(
+                      '${state.currentFrequencyHz} Hz • ${state.currentLevelDb} dBFS',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: EchoColors.navy,
+                      ),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 12),
               ClipRRect(
@@ -1287,16 +1294,20 @@ class _HistoryView extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
-                          'Previous Screenings',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                            color: EchoColors.navy,
+                        const Expanded(
+                          child: Text(
+                            'Previous Screenings',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: EchoColors.navy,
+                            ),
                           ),
                         ),
-                        if (demoEnabled)
+                        if (demoEnabled) ...[
+                          const SizedBox(width: 8),
                           const EchoStatusPill(label: 'Sample data'),
+                        ],
                       ],
                     ),
                     const SizedBox(height: 6),

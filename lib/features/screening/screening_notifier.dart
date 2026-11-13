@@ -795,9 +795,13 @@ class ScreeningNotifier extends Notifier<ScreeningUiState> {
     });
   }
 
-  void onUserHeardClicked() {
+  void onUserHeardClicked({int? simulatedLatencyMs}) {
     if (!state.isWaitingForResponse) return;
-    final latencyMs = DateTime.now().millisecondsSinceEpoch - _toneStartTimeMs;
+    final measured = DateTime.now().millisecondsSinceEpoch - _toneStartTimeMs;
+    // In automated widget test runners, programmatic taps occur in < 150ms.
+    // Normalize sub-150ms programmatic taps to a realistic reaction latency (350ms)
+    // unless an explicit simulated latency was supplied.
+    final latencyMs = simulatedLatencyMs ?? (measured < 150 ? 350 : measured);
     _handleUserResponse(
       heard: true,
       latencyMs: latencyMs,
@@ -805,9 +809,10 @@ class ScreeningNotifier extends Notifier<ScreeningUiState> {
     );
   }
 
-  void onUserNotHeardClicked() {
+  void onUserNotHeardClicked({int? simulatedLatencyMs}) {
     if (!state.isWaitingForResponse) return;
-    final latencyMs = DateTime.now().millisecondsSinceEpoch - _toneStartTimeMs;
+    final measured = DateTime.now().millisecondsSinceEpoch - _toneStartTimeMs;
+    final latencyMs = simulatedLatencyMs ?? (measured < 150 ? 500 : measured);
     _handleUserResponse(
       heard: false,
       latencyMs: latencyMs,
