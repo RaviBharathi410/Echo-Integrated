@@ -1,34 +1,54 @@
 import 'package:echo_hearing/app/feature_flags.dart';
 import 'package:echo_hearing/app/theme/echo_colors.dart';
 import 'package:echo_hearing/app/theme/echo_components.dart';
-import 'package:echo_hearing/core/data/user_profile_store.dart';
-import 'package:echo_hearing/features/monitor/monitor_notifier.dart';
+import 'package:echo_hearing/core/data/daily_exposure_store.dart';
 import 'package:echo_hearing/features/screening/screening_notifier.dart';
-import 'package:echo_hearing/features/screening/widgets/audiogram_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final profile = ref.watch(userProfileProvider);
-    final screening = ref.watch(screeningNotifierProvider);
-    final monitor = ref.watch(monitorNotifierProvider);
     final demoEnabled = ref.watch(demoDataEnabledProvider);
+    final exposure = ref.watch(dailyExposureProvider);
+    final screening = ref.watch(screeningNotifierProvider);
 
     final latestCompleted = screening.savedSessions
         .where((s) => s.isCompleted)
         .firstOrNull;
 
+    final isToneSample = latestCompleted == null || demoEnabled;
+    final isExposureSample = exposure.isSample || demoEnabled;
+    final isHomeSample = isToneSample || isExposureSample || demoEnabled;
+
+    final String lastCheckedText;
+    if (latestCompleted != null) {
+      final daysAgo = DateTime.now()
+          .difference(
+            DateTime.fromMillisecondsSinceEpoch(latestCompleted.startedAt),
+          )
+          .inDays;
+      if (daysAgo == 0) {
+        lastCheckedText = 'Today';
+      } else if (daysAgo == 1) {
+        lastCheckedText = 'Yesterday';
+      } else {
+        lastCheckedText = '$daysAgo days ago';
+      }
+    } else if (demoEnabled) {
+      lastCheckedText = '3 days ago';
+    } else {
+      lastCheckedText = 'Never (initial check pending)';
+    }
+
     return Scaffold(
       appBar: EchoTopBar(
-        title: 'ECHO',
+        title: 'ECHO Dashboard',
         actions: [
-          if (demoEnabled) const EchoStatusPill(label: 'Sample data'),
+          if (isHomeSample) const EchoStatusPill(label: 'Sample data'),
         ],
       ),
       body: SafeArea(
@@ -38,240 +58,257 @@ class HomeScreen extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Hello, ${profile.name}',
-                style: Theme.of(context).textTheme.displayMedium,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Goal: ${profile.primaryGoal}',
-                style: const TextStyle(fontSize: 14, color: EchoColors.muted),
-              ),
-              const SizedBox(height: 18),
-              if (!profile.initialScreeningCompleted) ...[
-                EchoCard(
-                  containerColor: EchoColors.primarySoft,
-                  borderColor: EchoColors.pillBorder,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Row(
-                        children: [
-                          Icon(
-                            Icons.verified_outlined,
-                            color: EchoColors.primary,
-                          ),
-                          SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              'Initial Baseline Pending',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
-                                color: EchoColors.navy,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Complete your initial hearing screening with headphones to establish a personal baseline.',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: EchoColors.muted,
-                          height: 1.4,
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      EchoPrimaryButton(
-                        text: 'Start Initial Screening',
-                        icon: Icons.hearing_outlined,
-                        onPressed: () => context.go('/test'),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 14),
-              ],
-              if (latestCompleted != null) ...[
-                EchoCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SizedBox(
-                        width: double.infinity,
-                        child: Wrap(
-                          alignment: WrapAlignment.spaceBetween,
-                          crossAxisAlignment: WrapCrossAlignment.center,
-                          spacing: 8,
-                          runSpacing: 6,
-                          children: [
-                            const Text(
-                              'Latest Screening',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
-                                color: EchoColors.navy,
-                              ),
-                            ),
-                            EchoStatusPill(
-                              label:
-                                  latestCompleted
-                                      .screeningOutcome
-                                      ?.overallClassification
-                                      .displayName ??
-                                  'Saved',
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        DateFormat('MMM d, y • h:mm a').format(
-                          DateTime.fromMillisecondsSinceEpoch(
-                            latestCompleted.startedAt,
-                          ),
-                        ),
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: EchoColors.muted,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      AudiogramView(
-                        thresholds: latestCompleted.thresholdResults,
-                        height: 170,
-                      ),
-                    ],
-                  ),
-                ),
-              ] else if (demoEnabled) ...[
-                EchoCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(
-                            child: Text(
-                              'Screening Snapshot',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
-                                color: EchoColors.navy,
-                              ),
-                            ),
-                          ),
-                          SizedBox(width: 8),
-                          EchoStatusPill(label: 'Sample data'),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Run a screening in the Test tab to replace sample preview text with your recorded thresholds.',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: EchoColors.muted,
-                          height: 1.4,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      EchoOutlinedPillButton(
-                        text: 'Go to Hearing Screening',
-                        icon: Icons.hearing_outlined,
-                        onPressed: () => context.go('/test'),
-                      ),
-                    ],
-                  ),
-                ),
-              ] else ...[
-                EchoCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'No Screenings Recorded Yet',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: EchoColors.navy,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      const Text(
-                        'Start a preliminary screening in the Test tab to save your digital response pattern locally.',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: EchoColors.muted,
-                          height: 1.4,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      EchoOutlinedPillButton(
-                        text: 'Run Preliminary Screening',
-                        icon: Icons.hearing_outlined,
-                        onPressed: () => context.go('/test'),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-              const SizedBox(height: 14),
+              // --- Card 1: Headphones Connection Status ---
               EchoCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
+                ),
+                child: Row(
                   children: [
-                    Row(
-                      children: [
-                        EchoIconBadge(
-                          icon: monitor.hasSafeHeadphoneOutput
-                              ? Icons.headphones_rounded
-                              : Icons.graphic_eq_rounded,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Live Sound Monitor & EQ',
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w700,
-                                  color: EchoColors.navy,
-                                ),
-                              ),
-                              Text(
-                                monitor.running
-                                    ? 'Active (${monitor.streamInfo})'
-                                    : monitor.hasSafeHeadphoneOutput
-                                    ? 'Headphones connected • Ready for real-time listening'
-                                    : 'Connect wired, USB-C, or Bluetooth headphones',
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: EchoColors.muted,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: EchoColors.primarySoft,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        exposure.connectionType.toLowerCase().contains('bluetooth')
+                            ? Icons.bluetooth_rounded
+                            : Icons.headphones_rounded,
+                        color: EchoColors.primary,
+                        size: 24,
+                      ),
                     ),
-                    const SizedBox(height: 14),
-                    EchoOutlinedPillButton(
-                      text: 'Open Sound Monitor',
-                      icon: Icons.graphic_eq_rounded,
-                      onPressed: () => context.go('/monitor'),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            exposure.isHeadphoneConnected
+                                ? 'Headphones Connected'
+                                : 'Headphones Disconnected',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: EchoColors.navy,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            exposure.connectionSubtitle,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: EchoColors.muted,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 16),
+
+              // --- Card 2: Daily Sound Exposure ---
+              EchoCard(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Expanded(
+                          child: Text(
+                            'Daily Sound Exposure',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: EchoColors.navy,
+                            ),
+                          ),
+                        ),
+                        if (isExposureSample) ...[
+                          const SizedBox(width: 8),
+                          const EchoStatusPill(label: 'Sample data'),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    const Text(
+                      'Illustrative estimate based on personal audio monitoring guidelines',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: EchoColors.muted,
+                        height: 1.35,
+                      ),
+                    ),
+                    const SizedBox(height: 22),
+                    Center(
+                      child: Column(
+                        children: [
+                          Text(
+                            exposure.formattedTodayListening,
+                            style: const TextStyle(
+                              fontSize: 30,
+                              fontWeight: FontWeight.w800,
+                              color: EchoColors.primary,
+                              letterSpacing: -0.5,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          const Text(
+                            "Today's Listening",
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: EchoColors.muted,
+                            ),
+                          ),
+                          const SizedBox(height: 18),
+                          Text(
+                            exposure.ambientLevelText,
+                            style: const TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w800,
+                              color: EchoColors.primary,
+                              letterSpacing: -0.3,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          const Text(
+                            'Ambient Exposure',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: EchoColors.muted,
+                            ),
+                          ),
+                          const SizedBox(height: 18),
+                          Text(
+                            exposure.formattedCurrentSession,
+                            style: const TextStyle(
+                              fontSize: 26,
+                              fontWeight: FontWeight.w800,
+                              color: EchoColors.primary,
+                              letterSpacing: -0.4,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          const Text(
+                            'Current Session',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: EchoColors.muted,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(999),
+                      child: LinearProgressIndicator(
+                        value: exposure.dailyProgress > 0
+                            ? exposure.dailyProgress
+                            : 0.05,
+                        minHeight: 8,
+                        backgroundColor: EchoColors.surfaceAlt,
+                        color: EchoColors.primary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // --- Card 3: Tone Response Profile ---
+              EchoCard(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Expanded(
+                          child: Text(
+                            'Tone Response Profile',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: EchoColors.navy,
+                            ),
+                          ),
+                        ),
+                        if (isToneSample) ...[
+                          const SizedBox(width: 8),
+                          const EchoStatusPill(label: 'Sample data'),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Last checked: $lastCheckedText',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: EchoColors.muted,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    const Text(
+                      'Consistent relative sound response across speech frequencies (Levels 1–13).',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: EchoColors.navy,
+                        height: 1.4,
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    EchoOutlinedPillButton(
+                      text: 'Check Response Again',
+                      icon: Icons.refresh_rounded,
+                      onPressed: () {
+                        ref
+                            .read(screeningNotifierProvider.notifier)
+                            .openSubScreen(ScreeningSubScreen.mainFlow);
+                        context.go('/test');
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // --- Section: Quick Access ---
               const Text(
-                'ECHO is a preliminary screening & sound awareness tool, not diagnostic medical equipment.',
-                style: TextStyle(fontSize: 12, color: EchoColors.muted),
+                'Quick Access',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: EchoColors.navy,
+                ),
+              ),
+              const SizedBox(height: 12),
+              EchoOutlinedPillButton(
+                text: 'History',
+                icon: Icons.history_rounded,
+                onPressed: () {
+                  ref
+                      .read(screeningNotifierProvider.notifier)
+                      .openSubScreen(ScreeningSubScreen.history);
+                  context.go('/test');
+                },
+              ),
+              const SizedBox(height: 20),
+
+              const Center(
+                child: Text(
+                  'ECHO is a preliminary screening & sound awareness tool, not diagnostic medical equipment.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 12, color: EchoColors.muted),
+                ),
               ),
             ],
           ),

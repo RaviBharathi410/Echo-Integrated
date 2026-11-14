@@ -162,6 +162,7 @@ class _ScreeningShellScreenState extends ConsumerState<ScreeningShellScreen> {
         SessionState.trialValidation ||
         SessionState.thresholdEstimation => _ActiveScreeningView(
           state: state,
+          demoEnabled: demoEnabled,
           onHeard: notifier.onUserHeardClicked,
           onNotHeard: notifier.onUserNotHeardClicked,
           onPause: notifier.onPauseRequested,
@@ -773,6 +774,7 @@ class _PracticeRoundView extends StatelessWidget {
 class _ActiveScreeningView extends StatelessWidget {
   const _ActiveScreeningView({
     required this.state,
+    required this.demoEnabled,
     required this.onHeard,
     required this.onNotHeard,
     required this.onPause,
@@ -781,6 +783,7 @@ class _ActiveScreeningView extends StatelessWidget {
   });
 
   final ScreeningUiState state;
+  final bool demoEnabled;
   final VoidCallback onHeard;
   final VoidCallback onNotHeard;
   final VoidCallback onPause;
@@ -792,8 +795,11 @@ class _ActiveScreeningView extends StatelessWidget {
     final totalTargets =
         (state.isExtendedFrequencyMode ? 6 : 4) * 2; // left + right ears
     final completedTargets = state.thresholdResults.length;
-    final progress = (completedTargets / totalTargets).clamp(0.05, 1.0);
+    final progress = (completedTargets / totalTargets).clamp(0.0, 1.0);
+    final progressPercent = (progress * 100).toInt();
     final isPaused = state.isNoisePaused && state.pauseReason != null;
+    final relativeLevel =
+        ((state.currentLevelDb - 10) ~/ 5 + 1).clamp(1, 13);
 
     return Scaffold(
       appBar: EchoTopBar(
@@ -811,98 +817,133 @@ class _ActiveScreeningView extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              SizedBox(
-                width: double.infinity,
-                child: Wrap(
-                  alignment: WrapAlignment.spaceBetween,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  spacing: 8,
-                  runSpacing: 6,
-                  children: [
-                    EchoStatusPill(
-                      label:
-                          '${state.currentEar.displayName} (${state.currentEar.clinicalCode})',
-                      icon: Icons.headphones_outlined,
-                    ),
-                    Text(
-                      '${state.currentFrequencyHz} Hz • ${state.currentLevelDb} dBFS',
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: EchoColors.navy,
-                      ),
+              // --- Ear and Sample Data Pills ---
+              Row(
+                children: [
+                  EchoStatusPill(
+                    label: state.currentEar.displayName,
+                    icon: Icons.hearing_rounded,
+                  ),
+                  if (demoEnabled || state.isSimulationMode) ...[
+                    const SizedBox(width: 8),
+                    const EchoStatusPill(
+                      label: 'Sample data',
+                      icon: Icons.info_outline_rounded,
                     ),
                   ],
-                ),
+                ],
               ),
               const SizedBox(height: 12),
+
+              // --- Progress Bar & Right-aligned Progress Percent ---
               ClipRRect(
                 borderRadius: BorderRadius.circular(999),
                 child: LinearProgressIndicator(
-                  value: progress,
-                  minHeight: 8,
+                  value: progress > 0 ? progress : 0.04,
+                  minHeight: 6,
                   backgroundColor: EchoColors.surfaceAlt,
                   color: EchoColors.primary,
                 ),
               ),
-              const Spacer(),
-              EchoIconBadge(
-                icon: state.isTonePlaying
-                    ? Icons.graphic_eq_rounded
-                    : Icons.hearing_outlined,
-                size: 84,
-                iconSize: 40,
-                isCircle: true,
-                containerColor: state.isTonePlaying
-                    ? EchoColors.primary
-                    : EchoColors.primarySoft,
-                tint: state.isTonePlaying ? Colors.white : EchoColors.primary,
-              ),
-              const SizedBox(height: 18),
-              Text(
-                isPaused
-                    ? 'Screening Paused'
-                    : state.isWaitingForResponse
-                    ? 'Listen & Respond'
-                    : 'Preparing Next Tone...',
-                style: Theme.of(context).textTheme.headlineMedium,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                isPaused
-                    ? state.pauseReason!
-                    : state.isWaitingForResponse
-                    ? 'Tap "I Hear It" if you perceive the pure tone, or "I Can\'t Hear It".'
-                    : 'Hold still in a quiet room. Trial #${state.trialNumber + 1}',
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: EchoColors.muted,
-                  height: 1.4,
+              const SizedBox(height: 6),
+              Align(
+                alignment: Alignment.centerRight,
+                child: Text(
+                  'Progress: $progressPercent%',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: EchoColors.muted,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
               const Spacer(),
+
+              // --- Central Frequency & Relative Level Card ---
+              EchoCard(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 36,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 96,
+                      height: 96,
+                      decoration: const BoxDecoration(
+                        color: EchoColors.primarySoft,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.graphic_eq_rounded,
+                        color: EchoColors.primary,
+                        size: 44,
+                      ),
+                    ),
+                    const SizedBox(height: 22),
+                    Text(
+                      '${state.currentFrequencyHz} Hz',
+                      style: const TextStyle(
+                        fontSize: 34,
+                        fontWeight: FontWeight.w800,
+                        color: EchoColors.navy,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Relative Sound Level $relativeLevel of 13',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: EchoColors.navy,
+                      ),
+                    ),
+                    if (isPaused) ...[
+                      const SizedBox(height: 14),
+                      Text(
+                        state.pauseReason ?? 'Test is paused',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: EchoColors.rose,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const Spacer(),
+
+              // --- Action Buttons ---
               EchoPrimaryButton(
                 text: 'I Hear It',
-                icon: Icons.check_rounded,
+                icon: Icons.volume_up_rounded,
                 enabled: state.isWaitingForResponse && !isPaused,
-                backgroundColor: EchoColors.emerald,
                 onPressed: onHeard,
               ),
               const SizedBox(height: 12),
               EchoOutlinedPillButton(
-                text: "I Can't Hear It",
-                icon: Icons.hearing_disabled_outlined,
+                text: "Can't Hear It",
+                icon: Icons.volume_off_rounded,
                 enabled: state.isWaitingForResponse && !isPaused,
                 onPressed: onNotHeard,
               ),
-              const SizedBox(height: 10),
-              TextButton(
-                onPressed: onCancel,
-                child: const Text(
-                  'Cancel Screening',
-                  style: TextStyle(color: EchoColors.rose),
+              const SizedBox(height: 8),
+              Center(
+                child: TextButton(
+                  onPressed: onCancel,
+                  child: const Text(
+                    'Cancel Screening',
+                    style: TextStyle(
+                      color: EchoColors.rose,
+                      fontSize: 13,
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -921,7 +962,15 @@ class _LeftEarCompleteView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const EchoTopBar(title: 'Hearing Screening'),
+      appBar: const EchoTopBar(
+        title: 'Hearing Screening',
+        actions: [
+          EchoStatusPill(
+            label: 'Pause test',
+            icon: Icons.pause_rounded,
+          ),
+        ],
+      ),
       body: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(

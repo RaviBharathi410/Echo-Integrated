@@ -104,7 +104,7 @@ void main() {
           if (uiState.currentLevelDb >= 20) {
             await tester.tap(find.text('I Hear It'));
           } else {
-            await tester.tap(find.text("I Can't Hear It"));
+            await tester.tap(find.text("Can't Hear It"));
           }
           await tester.pump();
         }
@@ -126,11 +126,11 @@ void main() {
       expect(syncedMonitor.gains[0], List<double>.filled(6, 0.0));
       expect(syncedMonitor.gains[1], List<double>.filled(6, 0.0));
 
-      // 3. Home tab shows Latest Screening card and no longer shows Initial Baseline Pending
+      // 3. Home tab shows Tone Response Profile card and ECHO Dashboard
       await tester.tap(find.text('Home'));
       await tester.pumpAndSettle();
-      expect(find.text('Initial Baseline Pending'), findsNothing);
-      expect(find.text('Latest Screening'), findsOneWidget);
+      expect(find.text('ECHO Dashboard'), findsOneWidget);
+      expect(find.text('Tone Response Profile'), findsOneWidget);
 
       // 4. Open Monitor tab: verify built-in speaker block vs headphone start, and tab switch stop
       monitorEngine.setDeviceSnapshot(
@@ -172,6 +172,7 @@ void main() {
       // 5. Sign Out returns cleanly to Welcome onboarding
       await tapVisible(tester, find.text('Sign Out'));
       expect(find.text('Welcome to ECHO'), findsOneWidget);
+      container.dispose();
     },
   );
 }

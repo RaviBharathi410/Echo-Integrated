@@ -137,7 +137,7 @@ void main() {
           if (uiState.currentLevelDb >= 20) {
             await tester.tap(find.text('I Hear It'));
           } else {
-            await tester.tap(find.text("I Can't Hear It"));
+            await tester.tap(find.text("Can't Hear It"));
           }
           await tester.pump();
         }
@@ -149,6 +149,7 @@ void main() {
       expect(find.byType(AudiogramView), findsOneWidget);
       expect(find.textContaining('not diagnostic'), findsOneWidget);
       expect((await repo.loadAllSessions()).length, 1);
+      container.dispose();
     },
   );
 }

@@ -632,11 +632,11 @@ class ScreeningNotifier extends Notifier<ScreeningUiState> {
           frequencyHz: AudiometricFrequencies.freq1000Hz,
           levelDb: 50,
           ear: Ear.left,
-          durationMs: 1500,
+          durationMs: 900,
         ),
       );
 
-      _practiceTimeoutTimer = Timer(const Duration(milliseconds: 3500), () {
+      _practiceTimeoutTimer = Timer(const Duration(milliseconds: 2200), () {
         if (state.sessionState == SessionState.practicePresentation) {
           onPracticeTimedOut();
         }
@@ -754,7 +754,7 @@ class ScreeningNotifier extends Notifier<ScreeningUiState> {
       isTonePlaying: false,
     );
 
-    final jitterMs = 500 + _random.nextInt(701); // 500..1200ms
+    final jitterMs = 300 + _random.nextInt(351); // 300..650ms
     _presentationTimer = Timer(Duration(milliseconds: jitterMs), () {
       if (_stateMachine.currentState != SessionState.stimulusPresentation) {
         return;
@@ -778,12 +778,13 @@ class ScreeningNotifier extends Notifier<ScreeningUiState> {
           frequencyHz: freq,
           levelDb: level,
           ear: ear,
-          durationMs: 1200,
+          durationMs: 800,
         ),
       );
 
-      // Response window: stimulus (1200ms) + 1800ms grace = 3000ms.
-      _responseTimeoutTimer = Timer(const Duration(milliseconds: 3000), () {
+      // Fast response window: 800ms stimulus + 1000ms grace = 1800ms.
+      // Full screening completes in ~45–90s (< 5 minutes).
+      _responseTimeoutTimer = Timer(const Duration(milliseconds: 1800), () {
         if (state.isWaitingForResponse) {
           _handleUserResponse(
             heard: false,
@@ -874,7 +875,7 @@ class ScreeningNotifier extends Notifier<ScreeningUiState> {
           trials: _thresholdStrategy.allTrials,
           trialNumber: _thresholdStrategy.allTrials.length,
         );
-        _nextTrialTimer = Timer(const Duration(milliseconds: 400), () {
+        _nextTrialTimer = Timer(const Duration(milliseconds: 250), () {
           if (_stateMachine.currentState == SessionState.trialValidation ||
               _stateMachine.currentState == SessionState.stimulusPresentation) {
             _startStimulusPresentation();
@@ -899,7 +900,7 @@ class ScreeningNotifier extends Notifier<ScreeningUiState> {
           isLeftEarCompletePaused: leftJustCompleted,
         );
         if (!leftJustCompleted) {
-          _nextTrialTimer = Timer(const Duration(milliseconds: 500), () {
+          _nextTrialTimer = Timer(const Duration(milliseconds: 300), () {
             if (_stateMachine.currentState == SessionState.thresholdEstimation) {
               _startStimulusPresentation();
             }
@@ -929,7 +930,7 @@ class ScreeningNotifier extends Notifier<ScreeningUiState> {
           isLeftEarCompletePaused: leftJustCompleted,
         );
         if (!leftJustCompleted) {
-          _nextTrialTimer = Timer(const Duration(milliseconds: 500), () {
+          _nextTrialTimer = Timer(const Duration(milliseconds: 300), () {
             if (_stateMachine.currentState == SessionState.thresholdEstimation) {
               _startStimulusPresentation();
             }

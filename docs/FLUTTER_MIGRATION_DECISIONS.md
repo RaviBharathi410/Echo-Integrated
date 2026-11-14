@@ -79,4 +79,15 @@ All architectural, behavioral, and platform decisions made during the migration 
 - **Alternatives Considered:** Fixed horizontal `Row` with hardcoded pixel paddings.
 - **Reason:** Completely eliminates yellow/black layout overflows on narrow mobile viewports (e.g. 334–372dp logical width) when font scaling or density flags are active.
 
+## 16. Optimized Screening Duration (< 5 Minutes)
+- **Decision:** Tune tone stimulus duration to 800ms, response timeout to 1800ms (800ms tone + 1000ms grace window), pre-stimulus jitter to 300–650ms, and inter-trial delay to 250–300ms; surface an explicit, prominent "Can't Hear It" button during active testing matching prototype and design screenshots.
+- **Alternatives Considered:** Keeping the legacy 1200ms tone, 3000ms response timeout, 500–1200ms silence jitter, and requiring users to wait out full timeouts on inaudible tones.
+- **Reason:** Across 8 targets (4 core frequencies × 2 ears) and ~3–4 trials per target (~28–32 trials total), typical active response duration drops from >4 minutes to ~45–75 seconds, comfortably meeting the <5 minute requirement while maintaining full clinical validity and Hughson-Westlake staircase rules.
+
+## 17. Automatic Sound Level Monitoring Only When Headphones Are Connected
+- **Decision:** Introduce `DailyExposureNotifier` / `DailyExposureStore` listening to `ScreeningDeviceDetector.routeStream`. Automatically start background listening tracking (accumulating today's listening time and current session time) and categorize ambient sound levels into 5 standardized tiers whenever wired, USB-C, or Bluetooth headphones are connected; immediately pause and reset current session on disconnect while preserving cumulative daily exposure in persistent storage.
+- **Alternatives Considered:** Requiring manual start/stop toggles on the dashboard or monitoring continuously using device speakers.
+- **Reason:** Fulfills the requirement to automatically track user sound activity strictly when listening through headphones, preventing false exposure logs from open-air environments while keeping the application dashboard and daily reports continuously up to date.
+
+
 

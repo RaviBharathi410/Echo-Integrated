@@ -1,6 +1,7 @@
 import 'package:echo_hearing/app/feature_flags.dart';
 import 'package:echo_hearing/app/theme/echo_colors.dart';
 import 'package:echo_hearing/app/theme/echo_components.dart';
+import 'package:echo_hearing/core/data/daily_exposure_store.dart';
 import 'package:echo_hearing/features/monitor/monitor_notifier.dart';
 import 'package:echo_hearing/features/screening/screening_notifier.dart';
 import 'package:flutter/material.dart';
@@ -24,6 +25,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     final demoEnabled = ref.watch(demoDataEnabledProvider);
     final screening = ref.watch(screeningNotifierProvider);
     final monitor = ref.watch(monitorNotifierProvider);
+    final exposure = ref.watch(dailyExposureProvider);
 
     return switch (_section) {
       _ReportSection.hub => Scaffold(
@@ -85,6 +87,55 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                             height: 1.4,
                           ),
                         ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 14),
+                EchoCard(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Expanded(
+                            child: Text(
+                              'Today\'s Headphone Exposure',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                color: EchoColors.navy,
+                              ),
+                            ),
+                          ),
+                          if (exposure.isSample || demoEnabled) ...[
+                            const SizedBox(width: 8),
+                            const EchoStatusPill(label: 'Sample data'),
+                          ],
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Listening Time: ${exposure.formattedTodayListening} • Current Session: ${exposure.formattedCurrentSession}\nAmbient Sound: ${exposure.ambientLevelText}',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: EchoColors.muted,
+                          height: 1.4,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(999),
+                        child: LinearProgressIndicator(
+                          value: exposure.dailyProgress > 0
+                              ? exposure.dailyProgress
+                              : 0.05,
+                          minHeight: 6,
+                          backgroundColor: EchoColors.surfaceAlt,
+                          color: EchoColors.primary,
+                        ),
+                      ),
                     ],
                   ),
                 ),

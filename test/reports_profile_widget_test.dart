@@ -129,8 +129,8 @@ void main() {
       await tester.pumpAndSettle();
 
       // Home tab
-      expect(find.text('Hello, Ravi'), findsOneWidget);
-      expect(find.text('Latest Screening'), findsOneWidget);
+      expect(find.text('ECHO Dashboard'), findsOneWidget);
+      expect(find.text('Tone Response Profile'), findsOneWidget);
 
       // Reports tab (release-style empty sample guard)
       await _tapVisible(tester, find.text('Reports'));
@@ -155,6 +155,7 @@ void main() {
 
       await _tapVisible(tester, find.text('Sign Out'));
       expect(find.text('Welcome to ECHO'), findsOneWidget);
+      container.dispose();
     },
   );
 }
